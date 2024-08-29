@@ -52,7 +52,7 @@ class CyrusSaslConan(ConanFile):
         "with_scram": True,
         "with_otp": True,
         "with_krb4": True,
-        "with_gssapi": False, # FIXME: should be True
+        "with_gssapi": True,
         "with_plain": True,
         "with_anon": True,
         "with_postgresql": False,
@@ -97,14 +97,12 @@ class CyrusSaslConan(ConanFile):
             self.requires("libmysqlclient/8.1.0")
         if self.options.get_safe("with_sqlite3"):
             self.requires("sqlite3/3.44.2")
+        if self.options.with_gssapi:
+            self.requires("krb5/1.21.2")
 
     def validate(self):
         if is_msvc(self) and not self.options.shared:
             raise ConanInvalidConfiguration("Static library output is not supported when building with MSVC")
-        if self.options.with_gssapi:
-            raise ConanInvalidConfiguration(
-                f"{self.name}:with_gssapi=True requires krb5 recipe, not yet available in conan-center",
-            )
 
     def build_requirements(self):
         if not is_msvc(self):
