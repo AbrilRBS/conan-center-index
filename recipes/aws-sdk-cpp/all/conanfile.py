@@ -502,37 +502,9 @@ class AwsSdkCppConan(ConanFile):
         # These versions come from prefetch_crt_dependency.sh,
         # dont bump them independently, check the file
         if self.version == "1.11.352":
-            self.requires("aws-crt-cpp/0.26.9", transitive_headers=True)
-            self.requires("aws-c-auth/0.7.16")
-            self.requires("aws-c-cal/0.6.14")
-            self.requires("aws-c-common/0.9.15")
-            self.requires("aws-c-compression/0.2.18")  # No mention of this in the code
-            self.requires("aws-c-event-stream/0.4.2")
-            self.requires("aws-c-http/0.8.1")
-            self.requires("aws-c-io/0.14.7")
-            self.requires("aws-c-mqtt/0.10.3")
-            if self.options.get_safe("s3-crt"):
-                self.requires("aws-c-s3/0.5.5")
-            self.requires("aws-c-sdkutils/0.1.15")  # No mention of this in the code
-            self.requires("aws-checksums/0.1.18")
-            # missing aws-lc, but only needed as openssl replacement if USE_OPENSSL is OFF
-            if self.settings.os in ["Linux", "FreeBSD", "Android"]:
-                self.requires("s2n/1.4.16")  # No mention of this in the code, we might be overlinking
+            self.requires("aws-crt-cpp/0.26.9", transitive_headers=True, transitive_libs=True)
         if self.version == "1.9.234":
-            self.requires("aws-crt-cpp/0.17.1a", transitive_headers=True)
-            self.requires("aws-c-auth/0.6.4")
-            self.requires("aws-c-cal/0.5.12")
-            self.requires("aws-c-common/0.6.11")
-            self.requires("aws-c-compression/0.2.14")
-            self.requires("aws-c-event-stream/0.2.7")
-            self.requires("aws-c-http/0.6.7")
-            self.requires("aws-c-io/0.10.9")
-            self.requires("aws-c-mqtt/0.7.8")
-            if self.options.get_safe("s3-crt"):
-                self.requires("aws-c-s3/0.1.26")
-            self.requires("aws-checksums/0.1.12")
-            if self.settings.os in ["Linux", "FreeBSD", "Android"]:
-                self.requires("s2n/1.3.15")  # No mention of this in the code, we might be overlinking
+            self.requires("aws-crt-cpp/0.17.1a", transitive_headers=True, transitive_libs=True)
         if self.settings.os != "Windows":
             # Used transitively in core/utils/crypto/openssl/CryptoImpl.h public header
             self.requires("openssl/[>=1.1 <4]", transitive_headers=True)
@@ -695,25 +667,8 @@ class AwsSdkCppConan(ConanFile):
         self.cpp_info.components["core"].libs = ["aws-cpp-sdk-core"]
         self.cpp_info.components["core"].requires = [
             "aws-crt-cpp::aws-crt-cpp",
-            "aws-c-auth::aws-c-auth",
-            "aws-c-cal::aws-c-cal",
-            "aws-c-common::aws-c-common",
-            "aws-c-compression::aws-c-compression",
-            "aws-c-event-stream::aws-c-event-stream",
-            "aws-c-http::aws-c-http",
-            "aws-c-io::aws-c-io",
-            "aws-c-mqtt::aws-c-mqtt",
-            "aws-checksums::aws-checksums",
             "zlib::zlib"
         ]
-
-        if self.settings.os in ["Linux", "FreeBSD", "Android"]:
-            self.cpp_info.components["core"].requires.append("s2n::s2n")
-
-        if Version(self.version) >= "1.11.352":
-            self.cpp_info.components["core"].requires.extend([
-                "aws-c-sdkutils::aws-c-sdkutils",
-            ])
 
         for sdk, _ in self._enabled_sdks():
             # TODO: there is no way to properly emulate COMPONENTS names for
@@ -750,9 +705,6 @@ class AwsSdkCppConan(ConanFile):
 
         if self.settings.os in ["Linux", "FreeBSD"]:
             self.cpp_info.components["core"].system_libs.append("atomic")
-
-        if self.options.get_safe("s3-crt"):
-            self.cpp_info.components["s3-crt"].requires.append("aws-c-s3::aws-c-s3")
 
         if self.settings.os == "Macos":
             if self.options.get_safe("text-to-speech"):

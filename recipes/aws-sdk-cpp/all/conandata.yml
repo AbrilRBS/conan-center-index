@@ -12,6 +12,7 @@ patches:
       patch_type: conan
     - patch_file: patches/1.11.352-0002-disable-sort-links.patch
     - patch_file: patches/1.9.100-0002-aws-plugin-conf.patch
+    - patch_file: patches/foo.patch
   "1.9.234":
     - patch_file: patches/1.9.234-0001-issue-1816.patch
     - patch_file: patches/1.9.234-0002-disable-sort-links.patch
