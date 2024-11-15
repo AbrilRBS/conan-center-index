@@ -1,0 +1,4 @@
+sources:
+  "0.8.1":
+    url: "https://github.com/fooyin/fooyin/archive/refs/tags/v0.8.1.tar.gz"
+    sha256: "e702389488e19c4c48b1b62bf1b2adf263b818138e3b232a39259057cbcec9c2"
