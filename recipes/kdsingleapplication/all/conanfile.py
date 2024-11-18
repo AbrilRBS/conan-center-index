@@ -9,16 +9,13 @@ import os
 
 required_conan_version = ">=2.1"
 
-
-class FooyinPackage(ConanFile):
-    name = "fooyin"
-    description = "fooyin is a music player built around customisation. It provides a variety of widgets to help you manage and play your local collection."
-
-    license = "GPL-3.0"
+class PackageConan(ConanFile):
+    name = "kdsingleapplication"
+    description = "short description"
+    license = "MIT"
     url = "https://github.com/conan-io/conan-center-index"
-    homepage = "https://github.com/fooyin/fooyin"
-    topics = ("music",)
-
+    homepage = "https://www.github.com/KDAB/KDSingleApplication"
+    topics = ("topic1", "topic2", "topic3")
     package_type = "library"
     settings = "os", "arch", "compiler", "build_type"
     options = {
@@ -35,25 +32,23 @@ class FooyinPackage(ConanFile):
         cmake_layout(self, src_folder="src")
 
     def requirements(self):
-        self.requires("qt/[>=6.2 <7]")
-        self.requires("taglib/1.13.1")  # TODO: Check if 2 is valid
-        self.requires("ffmpeg/4.4.4")  # Check if latest major version is valid
-        self.requires("icu/74.2")
+        # Works with both versions 5 and 6 of Qt
+        # The idea is that this comes _after_ the qt requirement downstream, so that
+        # the downstream package can pin the version of Qt that it wants to use.
+        self.requires("qt/[>=5 <7]")
 
     def validate(self):
-        check_min_cppstd(self, 20)
-        if self.settings.os not in ("Linux", "Macos"):
-            raise ConanInvalidConfiguration(f"{self.ref} only supports Linux/Macos")
-
-    def build_requirements(self):
-        self.tool_requires("cmake/[>=3.18 <4]")
+        check_min_cppstd(self, 14)
 
     def source(self):
         get(self, **self.conan_data["sources"][self.version], strip_root=True)
 
     def generate(self):
         tc = CMakeToolchain(self)
-        tc.cache_variables["INSTALL_FHS"] = False
+        tc.cache_variables["KDSingleApplication_EXAMPLES"] = False
+        tc.variables["KDSingleApplication_STATIC"] = not self.options.shared
+        tc.variables["KDSingleApplication_QT6"] = self.dependencies["qt"].ref.version.major == "6"
+        tc.variables["QT_VERSION_MAJOR"] = self.dependencies["qt"].ref.version.major
         tc.generate()
 
         deps = CMakeDeps(self)
@@ -65,13 +60,19 @@ class FooyinPackage(ConanFile):
         cmake.build()
 
     def package(self):
-        copy(self, "COPYING", self.source_folder, os.path.join(self.package_folder, "licenses"))
+        copy(self, "LICENSE.txt", self.source_folder, os.path.join(self.package_folder, "licenses"))
+        copy(self, "MIT.txt", os.path.join(self.source_folder, "LICENSES"), os.path.join(self.package_folder, "licenses"))
         cmake = CMake(self)
         cmake.install()
 
+        # Some files extensions and folders are not allowed. Please, read the FAQs to get informed.
+        # Consider disabling these at first to verify that the package_info() output matches the info exported by the project.
         rmdir(self, os.path.join(self.package_folder, "lib", "pkgconfig"))
         rmdir(self, os.path.join(self.package_folder, "lib", "cmake"))
         rmdir(self, os.path.join(self.package_folder, "share"))
+        rm(self, "*.pdb", self.package_folder, recursive=True)
 
     def package_info(self):
+        # library name to be packaged
         self.cpp_info.libs = []
+
