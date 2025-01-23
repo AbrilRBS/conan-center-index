@@ -1,5 +1,5 @@
 diff --git a/CMakeLists.txt b/CMakeLists.txt
-index 91b9b9b..9a2773f 100644
+index 7bd9be0..c4c14cf 100644
 --- a/CMakeLists.txt
 +++ b/CMakeLists.txt
 @@ -185,9 +185,9 @@ endif()
@@ -10,7 +10,7 @@ index 91b9b9b..9a2773f 100644
 -target_link_libraries(${PROJECT_NAME} PUBLIC Jsoncpp_lib)
 -list(APPEND INCLUDE_DIRS_FOR_DYNAMIC_VIEW ${JSONCPP_INCLUDE_DIRS})
 +find_package(jsoncpp REQUIRED)
-+target_link_libraries(${PROJECT_NAME} PUBLIC jsoncpp_lib)
++target_link_libraries(${PROJECT_NAME} PUBLIC JsonCpp::JsonCpp)
 +list(APPEND INCLUDE_DIRS_FOR_DYNAMIC_VIEW ${jsoncpp_INCLUDE_DIRS})
  
  # yamlcpp
@@ -24,6 +24,42 @@ index 91b9b9b..9a2773f 100644
                  target_compile_definitions(${PROJECT_NAME} PUBLIC HAS_YAML_CPP)
              endif()
          else()
+@@ -240,12 +240,12 @@ endif (NOT ${CMAKE_SYSTEM_NAME} STREQUAL "FreeBSD"
+     AND NOT WIN32)
+ 
+ if (BUILD_BROTLI)
+-    find_package(Brotli)
+-    if (Brotli_FOUND)
++    find_package(brotli)
++    if (brotli_FOUND)
+         message(STATUS "Brotli found")
+         add_definitions(-DUSE_BROTLI)
+-        target_link_libraries(${PROJECT_NAME} PRIVATE Brotli_lib)
+-    endif (Brotli_FOUND)
++        target_link_libraries(${PROJECT_NAME} PRIVATE brotli::brotli)
++    endif (brotli_FOUND)
+ endif (BUILD_BROTLI)
+ 
+ set(DROGON_SOURCES
+@@ -398,13 +398,13 @@ endif (BUILD_POSTGRESQL)
+ 
+ if (BUILD_MYSQL)
+     # Find mysql, only mariadb client library is supported
+-    find_package(MySQL QUIET)
++    find_package(mariadb-connector-c)
+     find_package(unofficial-libmariadb QUIET)
+-    if (MySQL_FOUND)
+-        target_link_libraries(${PROJECT_NAME} PRIVATE MySQL_lib)
++    if (mariadb-connector-c_FOUND)
++        target_link_libraries(${PROJECT_NAME} PRIVATE mariadb-connector-c::mariadb-connector-c)
+         set(DROGON_FOUND_MYSQL TRUE)
+-        set(MYSQL_LIB_NAME MySQL_lib)
+-    elseif (unofficial-libmariadb_FOUND)
++        set(MYSQL_LIB_NAME mariadb-connector-c::mariadb-connector-c)
++    elseif (mariadb-connector-c_FOUND)
+         target_link_libraries(${PROJECT_NAME} PRIVATE unofficial::libmariadb)
+         set(DROGON_FOUND_MYSQL TRUE)
+         set(MYSQL_LIB_NAME unofficial::libmariadb)
 @@ -437,7 +437,7 @@ if (BUILD_SQLITE)
      find_package(SQLite3 QUIET)
      find_package(unofficial-sqlite3 QUIET)

@@ -39,16 +39,16 @@ class DrogonConan(ConanFile):
         "shared": False,
         "fPIC": True,
         "with_boost": True,
-        "with_ctl": False,
+        "with_ctl": True,
         "with_orm": True,
         "with_profile": False,
-        "with_brotli": False,
-        "with_yaml_cpp": False,
-        "with_postgres": False,
-        "with_postgres_batch": False,
-        "with_mysql": False,
-        "with_sqlite": False,
-        "with_redis": False,
+        "with_brotli": True,
+        "with_yaml_cpp": True,
+        "with_postgres": True,
+        "with_postgres_batch": True,
+        "with_mysql": True,
+        "with_sqlite": True,
+        "with_redis": True,
     }
 
     def export_sources(self):
@@ -73,38 +73,8 @@ class DrogonConan(ConanFile):
         elif not self.options.with_postgres:
             del self.options.with_postgres_batch
 
-    @property
-    def _min_cppstd(self):
-        return 14 if Version(self.version) < "1.8.2" else 17
-
-    @property
-    def _compilers_minimum_version(self):
-        return {
-            "14": {
-                "Visual Studio": "15",
-                "msvc": "191",
-                "gcc": "6",
-                "clang": "5",
-                "apple-clang": "10",
-            },
-            "17": {
-                "Visual Studio": "16",
-                "msvc": "192",
-                "gcc": "8",
-                "clang": "7",
-                "apple-clang": "12",
-            }
-        }.get(str(self._min_cppstd), {})
-
     def validate(self):
-        if self.settings.compiler.get_safe("cppstd"):
-            check_min_cppstd(self, self._min_cppstd)
-        minimum_version = self._compilers_minimum_version.get(str(self.info.settings.compiler), False)
-        if minimum_version:
-            if Version(self.info.settings.compiler.version) < minimum_version:
-                raise ConanInvalidConfiguration(f"{self.ref} requires C++{self._min_cppstd}, which your compiler does not support.")
-        else:
-            self.output.warn(f"{self.ref} requires C++{self._min_cppstd}. Your compiler is unknown. Assuming it supports C++{self._min_cppstd}.")
+        check_min_cppstd(self, 14 if Version(self.version) < "1.8.2" else 17)
 
         if self.settings.compiler.get_safe("cppstd") == "14" and not self.options.with_boost:
             raise ConanInvalidConfiguration(f"{self.ref} requires boost on C++14")
@@ -122,15 +92,15 @@ class DrogonConan(ConanFile):
         if self.options.with_profile:
             self.requires("coz/cci.20210322")
         if self.options.with_boost:
-            self.requires("boost/1.83.0", transitive_headers=True)
+            self.requires("boost/1.86.0", transitive_headers=True)
         if self.options.with_brotli:
             self.requires("brotli/1.1.0")
         if self.options.get_safe("with_postgres"):
-            self.requires("libpq/15.4")
+            self.requires("libpq/15.5")
         if self.options.get_safe("with_mysql"):
-            self.requires("libmysqlclient/8.1.0")
+            self.requires("mariadb-connector-c/3.3.8")
         if self.options.get_safe("with_sqlite"):
-            self.requires("sqlite3/3.45.0")
+            self.requires("sqlite3/3.48.0")
         if self.options.get_safe("with_redis"):
             self.requires("hiredis/1.2.0")
         if self.options.get_safe("with_yaml_cpp", False):
@@ -138,6 +108,7 @@ class DrogonConan(ConanFile):
 
     def source(self):
         get(self, **self.conan_data["sources"][self.version], strip_root=True)
+        apply_conandata_patches(self)
 
     def layout(self):
         cmake_layout(self, src_folder="src")
@@ -161,12 +132,12 @@ class DrogonConan(ConanFile):
             tc.variables["CMAKE_CXX_FLAGS"] = "/Zc:__cplusplus /EHsc"
         if Version(self.version) >= "1.8.4":
             tc.variables["USE_SUBMODULE"] = False
+        tc.cache_variables["CMAKE_DISABLE_FIND_PACKAGE_Doxygen"] = True
         tc.generate()
         tc = CMakeDeps(self)
         tc.generate()
 
     def build(self):
-        apply_conandata_patches(self)
         cmake = CMake(self)
         cmake.configure()
         cmake.build()
@@ -181,19 +152,10 @@ class DrogonConan(ConanFile):
         self.cpp_info.libs = ["drogon"]
         if self.settings.os == "Windows":
             self.cpp_info.system_libs.extend(["rpcrt4", "ws2_32", "crypt32", "advapi32"])
+        elif self.settings.os in ["Linux", "FreeBSD"]:
+            self.cpp_info.system_libs.extend(["dl", "pthread"])
         if self.settings.compiler == "gcc" and Version(self.settings.compiler.version).major == "8":
             self.cpp_info.system_libs.append("stdc++fs")
 
-        if self.options.with_ctl:
-            bin_path = os.path.join(self.package_folder, "bin")
-            self.output.info(f"Appending PATH environment variable: {bin_path}")
-            self.env_info.PATH.append(bin_path)
-
         self.cpp_info.set_property("cmake_file_name", "Drogon")
         self.cpp_info.set_property("cmake_target_name", "Drogon::Drogon")
-
-        # TODO: Remove after Conan 2.0
-        self.cpp_info.filenames["cmake_find_package"] = "Drogon"
-        self.cpp_info.filenames["cmake_find_package_multi"] = "Drogon"
-        self.cpp_info.names["cmake_find_package"] = "Drogon"
-        self.cpp_info.names["cmake_find_package_multi"] = "Drogon"
