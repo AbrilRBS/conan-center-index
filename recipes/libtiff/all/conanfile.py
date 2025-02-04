@@ -30,6 +30,7 @@ class LibtiffConan(ConanFile):
         "jbig": [True, False],
         "webp": [True, False],
         "cxx":  [True, False],
+        "lerc": [True, False],
     }
     default_options = {
         "shared": False,
@@ -42,6 +43,7 @@ class LibtiffConan(ConanFile):
         "jbig": True,
         "webp": True,
         "cxx":  True,
+        "lerc": True,
     }
 
     def export_sources(self):
@@ -50,6 +52,8 @@ class LibtiffConan(ConanFile):
     def config_options(self):
         if self.settings.os == "Windows":
             del self.options.fPIC
+        if Version(self.version) < "4.3.0":
+            del self.options.lerc
 
     def configure(self):
         if self.options.shared:
@@ -80,6 +84,8 @@ class LibtiffConan(ConanFile):
             self.requires("zstd/1.5.5")
         if self.options.webp:
             self.requires("libwebp/1.3.2")
+        if self.options.get_safe("lerc"):
+            self.requires("lerc/4.0.4")
 
     def validate(self):
         if self.options.libdeflate and not self.options.zlib:
@@ -103,7 +109,7 @@ class LibtiffConan(ConanFile):
         tc.variables["libdeflate"] = self.options.libdeflate
         tc.variables["zstd"] = self.options.zstd
         tc.variables["webp"] = self.options.webp
-        tc.variables["lerc"] = False # TODO: add lerc support for libtiff versions >= 4.3.0
+        tc.variables["lerc"] = self.options.get_safe("lerc")
         if Version(self.version) >= "4.5.0":
             # Disable tools, test, contrib, man & html generation
             tc.variables["tiff-tools"] = False
@@ -124,6 +130,8 @@ class LibtiffConan(ConanFile):
             deps.set_property("libdeflate", "cmake_file_name", "Deflate")
             deps.set_property("libdeflate", "cmake_target_name", "Deflate::Deflate")
             deps.set_property("zstd", "cmake_file_name", "ZSTD")
+            deps.set_property("lerc", "cmake_file_name", "LERC")
+            deps.set_property("lerc", "cmake_target_name", "LERC::LERC")
         deps.generate()
 
     def _patch_sources(self):
@@ -189,3 +197,5 @@ class LibtiffConan(ConanFile):
             self.cpp_info.requires.append("zstd::zstd")
         if self.options.webp:
             self.cpp_info.requires.append("libwebp::webp")
+        if self.options.get_safe("lerc"):
+            self.cpp_info.requires.append("lerc::lerc")
