@@ -91,5 +91,15 @@ class JoltPhysicsConan(ConanFile):
                                           "JPH_USE_SSE4_2", "JPH_USE_LZCNT", "JPH_USE_TZCNT",
                                           "JPH_USE_F16C", "JPH_USE_FMADD"])
 
+        if self.options.shared:
+            self.cpp_info.defines.append("JPH_SHARED_LIBRARY")
+
+        if self.settings.compiler == "msvc":
+            self.cpp_info.defines.append("JPH_FLOATING_POINT_EXCEPTIONS_ENABLED")
+            self.cpp_info.defines.append("_HAS_EXCEPTIONS=0")
+
+        if self.settings.build_type in ("Debug", "Release"):
+            self.cpp_info.defines.append("JPH_DEBUG_RENDERER")
+
         if self.settings.os in ["Linux", "FreeBSD"]:
             self.cpp_info.system_libs.append("pthread")
