@@ -1,3 +1,9 @@
 sources:
-  "1.18.3":
-    url: "https://github.com/benmcollins/libjwt/archive/refs/tags/v1.18.3.zip"
+  "3.2.0":
+    url: "https://github.com/benmcollins/libjwt/archive/refs/tags/v3.2.0.zip"
+    sha256: "b3dba825fd4bed935a029da8f6dffd4c8348d8462dd61d05000b22890be88d61"
+patches:
+  "3.2.0":
+    - patch_file: "patches/0001-3.2.0-install-only-requested-library.patch"
+      patch_description: "Install only requested library"
+      patch_type: "conan"

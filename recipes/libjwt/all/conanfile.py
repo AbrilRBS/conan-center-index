@@ -1,72 +1,63 @@
-from conan import ConanFile, conan_version
+from conan import ConanFile
 from conan.tools.cmake import CMakeToolchain, CMake, cmake_layout, CMakeDeps
-from conan.tools.files import get
-from conan.tools.system import package_manager
-from conan.tools.scm import Version
+from conan.tools.files import get, export_conandata_patches, apply_conandata_patches, rmdir, rename, copy
+from conan.tools.gnu import PkgConfigDeps
+import os
 
+required_conan_version = ">=2.4"
 
 class libjwtRecipe(ConanFile):
     name = "libjwt"
-    package_type = "library"
 
     # Optional metadata
     license = "Mozilla Public License Version 2.0"
-    author = "Ben Collins"
     url = "https://github.com/benmcollins/libjwt"
     description = "The C JSON Web Token Library +JWK +JWKS"
     topics = ("json", "jwt", "jwt-token")
 
     # Binary configuration
+    package_type = "library"
     settings = "os", "compiler", "build_type", "arch"
-    options = {"shared": [True, False], "fPIC": [True, False]}
-    default_options = {"shared": False, "fPIC": True}
+    options = {
+        "shared": [True, False],
+        "fPIC": [True, False],
+    }
+    default_options = {
+        "shared": False,
+        "fPIC": True,
+    }
 
-    def source(self):
-        get(self, self.conan_data["sources"][self.version]["url"], strip_root=True)
+    implements = ["auto_shared_fpic"]
+    languages = "C"
 
-    def requirements(self):
-        self.requires("openssl/3.3.2")
-        self.requires("jansson/2.14")
-
-    def system_requirements(self):
-        apt = package_manager.Apt(self)
-        apt.install(["libjansson-dev"], update=True, check=True)
-        
-        yum = package_manager.Yum(self)
-        yum.install(["jansson-devel"], update=True, check=True)
-
-        dnf = package_manager.Dnf(self)
-        dnf.install(["jansson-devel"], update=True, check=True)
-
-        zypper = package_manager.Zypper(self)
-        zypper.install(["libjansson-devel"], update=True, check=True)
-
-        pacman = package_manager.PacMan(self)
-        pacman.install(["jansson"], update=True, check=True)
-
-        pkg = package_manager.Pkg(self)
-        pkg.install(["jansson"], update=True, check=True)
-        
-        if Version(conan_version) >= "2.0.10":
-            alpine = package_manager.Apk(self)
-            alpine.install(["jansson"], update=True, check=True)
-
-    def config_options(self):
-        if self.settings.os == "Windows":
-            self.options.rm_safe("fPIC")
-
-    def configure(self):
-        if self.options.shared:
-            self.options.rm_safe("fPIC")
+    def export_sources(self):
+        export_conandata_patches(self)
 
     def layout(self):
-        cmake_layout(self)
+        cmake_layout(self, src_folder="src")
+
+    def requirements(self):
+        self.requires("openssl/[>=3 <4]")
+        self.requires("jansson/2.14")
+
+    def source(self):
+        get(self, **self.conan_data["sources"][self.version], strip_root=True)
+        apply_conandata_patches(self)
 
     def generate(self):
-        cmakeDeps = CMakeDeps(self)
-        cmakeDeps.generate()
+        deps = CMakeDeps(self)
+        deps.generate()
+
+        pkgdeps = PkgConfigDeps(self)
+        pkgdeps.generate()
 
         tc = CMakeToolchain(self)
+        # Open an issue if you need support for these!
+        tc.cache_variables["WITH_GNUTLS"] = False
+        tc.cache_variables["WITH_MBEDTLS"] = False
+        # Don't try to build docs even if user has doxygen installed system-wide
+        tc.cache_variables["CMAKE_DISABLE_FIND_PACKAGE_Doxygen"] = True
+        tc.cache_variables["WITH_TESTS"] = False
         tc.generate()
 
     def build(self):
@@ -75,8 +66,14 @@ class libjwtRecipe(ConanFile):
         cmake.build()
 
     def package(self):
+        copy(self, "LICENSE", self.source_folder, dst=os.path.join(self.package_folder, "licenses"))
         cmake = CMake(self)
         cmake.install()
+        rmdir(self, os.path.join(self.package_folder, "lib", "pkgconfig"))
+        rmdir(self, os.path.join(self.package_folder, "lib", "cmake"))
+        rmdir(self, os.path.join(self.package_folder, "share"))
 
     def package_info(self):
         self.cpp_info.libs = ["jwt"]
+        self.cpp_info.set_property("cmake_file_name", "LibJWT")
+        self.cpp_info.set_property("cmake_target_name", "LibJWT::jwt")

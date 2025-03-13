@@ -1,0 +1,34 @@
+diff --git a/CMakeLists.txt b/CMakeLists.txt
+index 9fd63e8..0958b80 100644
+--- a/CMakeLists.txt
++++ b/CMakeLists.txt
+@@ -199,6 +199,7 @@ install(FILES include/jwt.h
+ install(FILES LICENSE README.md
+ 	DESTINATION ${CMAKE_INSTALL_DOCDIR})
+ 
++if (BUILD_SHARED_LIBS)
+ # Install library
+ install(TARGETS jwt
+ 	EXPORT ${LIBJWT_PROJECT}Targets
+@@ -206,19 +207,13 @@ install(TARGETS jwt
+ 	LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
+ 	RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
+ )
+-
++else()
+ # Install Static library
+ install(TARGETS jwt_static
+         EXPORT ${LIBJWT_PROJECT}StaticTargets
+ 	ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
+ )
+-
+-# For cmake users
+-install(EXPORT ${LIBJWT_PROJECT}Targets
+-	FILE ${LIBJWT_PROJECT}Config.cmake
+-	NAMESPACE ${LIBJWT_PROJECT}::
+-	DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/${LIBJWT_PROJECT}
+-)
++endif(BUILD_SHARED_LIBS)
+ 
+ # For pkg-config users
+ unset(LIBJWT_LDFLAGS)
