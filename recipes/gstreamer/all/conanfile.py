@@ -57,6 +57,7 @@ class GStreamerConan(ConanFile):
 
     def requirements(self):
         self.requires("glib/2.78.3", transitive_headers=True, transitive_libs=True)
+        self.requires("orc/2.0.3")
 
     def validate(self):
         if not self.dependencies.direct_host["glib"].options.shared and self.options.shared:
@@ -88,6 +89,7 @@ class GStreamerConan(ConanFile):
         if self._is_legacy_one_profile:
             VirtualRunEnv(self).generate(scope="build")
         pkg_config_deps = PkgConfigDeps(self)
+        pkg_config_deps.set_property("orc", "pkg_config_name", "orc-0.4")
         pkg_config_deps.generate()
         tc = MesonToolchain(self)
         if is_msvc(self) and not check_min_vs(self, "190", raise_invalid=False):
@@ -98,6 +100,7 @@ class GStreamerConan(ConanFile):
         tc.project_options["tests"] = "disabled"
         tc.project_options["introspection"] = "enabled" if self.options.with_introspection else "disabled"
         tc.project_options["build-tools-source"] = "system"
+        tc.project_options["orc-source"] = "system"
         tc.generate()
 
     def build(self):
@@ -216,7 +219,7 @@ class GStreamerConan(ConanFile):
         self.cpp_info.components["gstreamer-pbutils-1.0"].set_property("pkg_config_custom_content", pkgconfig_custom_content)
 
         self.cpp_info.components["gstreamer-video-1.0"].set_property("pkg_config_name", "gstreamer-video-1.0")
-        self.cpp_info.components["gstreamer-video-1.0"].requires = ["gstreamer-1.0"]
+        self.cpp_info.components["gstreamer-video-1.0"].requires = ["gstreamer-1.0", "orc::orc"]
         self.cpp_info.components["gstreamer-video-1.0"].libs = ["gstvideo-1.0"]
         self.cpp_info.components["gstreamer-video-1.0"].includedirs = [os.path.join("include", "gstreamer-1.0")]
         if self.settings.os == "Linux":
