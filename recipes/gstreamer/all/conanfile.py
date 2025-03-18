@@ -97,6 +97,7 @@ class GStreamerConan(ConanFile):
         tc.project_options["benchmarks"] = "disabled"
         tc.project_options["tests"] = "disabled"
         tc.project_options["introspection"] = "enabled" if self.options.with_introspection else "disabled"
+        tc.project_options["build-tools-source"] = "system"
         tc.generate()
 
     def build(self):
@@ -188,6 +189,48 @@ class GStreamerConan(ConanFile):
         if self.settings.os == "Linux":
             self.cpp_info.components["gstreamer-check-1.0"].system_libs = ["rt", "m"]
         self.cpp_info.components["gstreamer-check-1.0"].set_property("pkg_config_custom_content", pkgconfig_custom_content)
+
+        # NEW ONES PLUGINS
+        self.cpp_info.components["gstreamer-app-1.0"].set_property("pkg_config_name", "gstreamer-app-1.0")
+        self.cpp_info.components["gstreamer-app-1.0"].requires = ["gstreamer-1.0"]
+        self.cpp_info.components["gstreamer-app-1.0"].libs = ["gstapp-1.0"]
+        self.cpp_info.components["gstreamer-app-1.0"].includedirs = [os.path.join("include", "gstreamer-1.0")]
+        if self.settings.os == "Linux":
+            self.cpp_info.components["gstreamer-app-1.0"].system_libs = ["rt", "m"]
+        self.cpp_info.components["gstreamer-app-1.0"].set_property("pkg_config_custom_content", pkgconfig_custom_content)
+
+        self.cpp_info.components["gstreamer-riff-1.0"].set_property("pkg_config_name", "gstreamer-riff-1.0")
+        self.cpp_info.components["gstreamer-riff-1.0"].requires = ["gstreamer-1.0"]
+        self.cpp_info.components["gstreamer-riff-1.0"].libs = ["gstriff-1.0"]
+        self.cpp_info.components["gstreamer-riff-1.0"].includedirs = [os.path.join("include", "gstreamer-1.0")]
+        if self.settings.os == "Linux":
+            self.cpp_info.components["gstreamer-riff-1.0"].system_libs = ["rt", "m"]
+        self.cpp_info.components["gstreamer-riff-1.0"].set_property("pkg_config_custom_content", pkgconfig_custom_content)
+
+        self.cpp_info.components["gstreamer-pbutils-1.0"].set_property("pkg_config_name", "gstreamer-pbutils-1.0")
+        self.cpp_info.components["gstreamer-pbutils-1.0"].requires = ["gstreamer-1.0"]
+        self.cpp_info.components["gstreamer-pbutils-1.0"].libs = ["gstpbutils-1.0"]
+        self.cpp_info.components["gstreamer-pbutils-1.0"].includedirs = [os.path.join("include", "gstreamer-1.0")]
+        if self.settings.os == "Linux":
+            self.cpp_info.components["gstreamer-pbutils-1.0"].system_libs = ["rt", "m"]
+        self.cpp_info.components["gstreamer-pbutils-1.0"].set_property("pkg_config_custom_content", pkgconfig_custom_content)
+
+        self.cpp_info.components["gstreamer-video-1.0"].set_property("pkg_config_name", "gstreamer-video-1.0")
+        self.cpp_info.components["gstreamer-video-1.0"].requires = ["gstreamer-1.0"]
+        self.cpp_info.components["gstreamer-video-1.0"].libs = ["gstvideo-1.0"]
+        self.cpp_info.components["gstreamer-video-1.0"].includedirs = [os.path.join("include", "gstreamer-1.0")]
+        if self.settings.os == "Linux":
+            self.cpp_info.components["gstreamer-video-1.0"].system_libs = ["rt", "m"]
+        self.cpp_info.components["gstreamer-video-1.0"].set_property("pkg_config_custom_content", pkgconfig_custom_content)
+
+        self.cpp_info.components["gstreamer-audio-1.0"].set_property("pkg_config_name", "gstreamer-audio-1.0")
+        self.cpp_info.components["gstreamer-audio-1.0"].requires = ["gstreamer-1.0"]
+        self.cpp_info.components["gstreamer-audio-1.0"].libs = ["gstaudio-1.0"]
+        self.cpp_info.components["gstreamer-audio-1.0"].includedirs = [os.path.join("include", "gstreamer-1.0")]
+        if self.settings.os == "Linux":
+            self.cpp_info.components["gstreamer-audio-1.0"].system_libs = ["rt", "m"]
+        self.cpp_info.components["gstreamer-audio-1.0"].set_property("pkg_config_custom_content", pkgconfig_custom_content)
+
 
         # gstcoreelements and gstcoretracers are plugins which should be loaded dynamically, and not linked to directly
         if not self.options.shared:

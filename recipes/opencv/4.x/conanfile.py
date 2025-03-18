@@ -530,7 +530,7 @@ class OpenCVConan(ConanFile):
             "gapi": {
                 "is_built": self.options.gapi,
                 "mandatory_options": ["imgproc"],
-                "requires": ["opencv_imgproc", "ade::ade"] + openvino(),
+                "requires": ["opencv_imgproc", "ade::ade", "gstreamer::gstreamer"] + openvino(),
                 "system_libs": [
                     (self.settings.os == "Windows", ["ws2_32", "wsock32"]),
                 ],
@@ -590,7 +590,7 @@ class OpenCVConan(ConanFile):
             "videoio": {
                 "is_built": self.options.videoio,
                 "mandatory_options": ["imgcodecs", "imgproc"],
-                "requires": ["opencv_imgcodecs", "opencv_imgproc"] + ffmpeg() + ipp(),
+                "requires": ["opencv_imgcodecs", "opencv_imgproc", "gstreamer::gstreamer"] + ffmpeg() + ipp(),
                 "system_libs": [
                     (self.settings.os == "Android" and int(str(self.settings.os.api_level)) > 20, ["mediandk"]),
                 ],
@@ -1180,6 +1180,8 @@ class OpenCVConan(ConanFile):
         if self.options.get_safe("with_tesseract"):
             self.requires("tesseract/5.3.3")
 
+        self.requires("gstreamer/1.26.0")
+
     def package_id(self):
         # deprecated options
         del self.info.options.contrib
@@ -1418,7 +1420,8 @@ class OpenCVConan(ConanFile):
                     tc.variables[f"FFMPEG_lib{component}_VERSION"] = ffmpeg_component_version
             tc.variables["FFMPEG_LIBRARIES"] = ";".join(ffmpeg_libraries)
 
-        tc.variables["WITH_GSTREAMER"] = False
+        tc.variables["WITH_GSTREAMER"] = True
+        tc.variables["OPENCV_GAPI_GSTREAMER"] = True
         tc.variables["WITH_HALIDE"] = False
         tc.variables["WITH_HPX"] = False
         tc.variables["WITH_IMGCODEC_HDR"] = self.options.get_safe("with_imgcodec_hdr", False)
@@ -1587,6 +1590,9 @@ class OpenCVConan(ConanFile):
                 save(self, os.path.join(self.generators_folder, "wayland-protocols.pc"), wp_pkg_content)
             else:
                 deps.build_context_activated = ["wayland-protocols"]
+            deps.generate()
+        else:
+            deps = PkgConfigDeps(self)
             deps.generate()
 
     def build(self):
