@@ -176,3 +176,7 @@ find_package(Boost REQUIRED)
 add_executable(lambda_exe lambda.cpp)
 target_link_libraries(lambda_exe PRIVATE Boost::headers)
 add_test(NAME boost_boost COMMAND lambda_exe)
+
+#add_executable(asio_exe asio.cpp)
+#target_link_libraries(asio_exe PRIVATE Boost::headers)
+#add_test(NAME boost_asio COMMAND asio_exe)
