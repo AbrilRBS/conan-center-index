@@ -28,6 +28,7 @@ class LibtorchRecipe(ConanFile):
     options = {
         "shared": [True, False],
         "fPIC": [True, False],
+        "with_cuda": [True, False],
         "with_gflags": [True, False],
         "with_kleidiai": [True, False],
         "with_mimalloc": [True, False],
@@ -37,6 +38,7 @@ class LibtorchRecipe(ConanFile):
     default_options = {
         "shared": False,
         "fPIC": True,
+        "with_cuda": False,
         "with_gflags": False,
         "with_kleidiai": True,
         "with_mimalloc": False,
@@ -100,6 +102,8 @@ class LibtorchRecipe(ConanFile):
             self.requires("libbacktrace/cci.20210118")
         if self._has_ittapi:
             self.requires("ittapi/3.25.5")
+        if self.options.with_cuda:
+            self.requires("cutlass/4.3.5")
         if self.options.with_gflags:
             self.requires("gflags/2.2.2", transitive_headers=True)
         if self.options.get_safe("with_kleidiai"):
@@ -187,7 +191,6 @@ class LibtorchRecipe(ConanFile):
 
         tc.cache_variables["USE_DISTRIBUTED"] = False
         tc.cache_variables["USE_CCACHE"] = False
-        tc.cache_variables["USE_CUDA"] = False
         tc.cache_variables["USE_FBGEMM"] = False  # TODO unvendor after adding to CCI
         tc.cache_variables["USE_GLOO"] = False    # TODO unvendor after adding to CCI
         tc.cache_variables["USE_KINETO"] = False  # TODO unvendor after adding to CCI
@@ -204,6 +207,12 @@ class LibtorchRecipe(ConanFile):
         tc.cache_variables["USE_MIMALLOC"] = self.options.with_mimalloc
         tc.cache_variables["USE_NNPACK"] = self.options.get_safe("with_nnpack")
         tc.cache_variables["USE_NUMA"] = self.options.get_safe("with_numa")
+
+        # Cuda support
+        tc.cache_variables["USE_CUDA"] = self.options.with_cuda
+        tc.cache_variables["USE_FLASH_ATTENTION"] = False
+        tc.cache_variables["USE_MEM_EFF_ATTENTION"] = False
+
 
         tc.cache_variables['Python_FIND_UNVERSIONED_NAMES'] = 'FIRST'
         tc.cache_variables['Python_FIND_STRATEGY'] = 'LOCATION'
@@ -326,8 +335,23 @@ class LibtorchRecipe(ConanFile):
         if self.options.get_safe("with_numa"):
             torch_cpu.requires.append("libnuma::libnuma")
 
+        if self.options.with_cuda:
+            c10_cuda = _whole_archive(self.cpp_info.components["c10_cuda"], "c10_cuda")
+            c10_cuda.requires = ["c10"]
+            if self.options.with_gflags:
+                c10_cuda.requires.append("gflags::gflags")
+
+            caffe2_nvrtc = self.cpp_info.components["caffe2_nvrtc"]
+            caffe2_nvrtc.libs = ["caffe2_nvrtc"] # Shared lib
+
+            torch_cuda = _whole_archive(self.cpp_info.components["torch_cuda"], "torch_cuda")
+            # TODO: verify if caffe2_nvrtc has to be linked to torch_cuda
+            torch_cuda.requires = ["torch_cpu", "c10_cuda", "cutlass::cutlass"]
+
         # Torch global component
         self.cpp_info.components["torch"].libs = ["torch"]
+        if self.options.with_cuda:
+            self.cpp_info.components["torch"].requires.append("torch_cuda")
         self.cpp_info.components["torch"].requires = ["torch_cpu"]
         self.cpp_info.components["torch"].includedirs = ["include/torch/csrc/api/include", "include"]
 
