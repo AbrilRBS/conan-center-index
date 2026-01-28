@@ -127,8 +127,6 @@ class OpenSceneGraphConanFile(ConanFile):
         if self.options.use_fontconfig:
             self.requires("fontconfig/[>=2.14.2 <3]")
 
-        self.requires("libxml2/[>=2.12.5 <3]")
-
         if self.options.get_safe("with_asio"):
             # Should these be private requires?
             self.requires("asio/1.28.1")
