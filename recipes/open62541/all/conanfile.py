@@ -1,7 +1,7 @@
 from conan import ConanFile
 from conan.tools.cmake import cmake_layout, CMake, CMakeToolchain, CMakeDeps
 from conan.tools.scm import Version
-from conan.tools.files import apply_conandata_patches, collect_libs, export_conandata_patches, copy, rm, rmdir, get, replace_in_file
+from conan.tools.files import apply_conandata_patches, export_conandata_patches, copy, rm, rmdir, get, replace_in_file
 from conan.errors import ConanInvalidConfiguration
 import glob
 import os
@@ -40,10 +40,9 @@ class Open62541Conan(ConanFile):
         "logging_level": ["Fatal", "Error", "Warning", "Info", "Debug", "Trace"],
         # False: UA_ENABLE_SUBSCRIPTIONS=Off
         # True: UA_ENABLE_SUBSCRIPTIONS=On
-        # With Events: deprecated. Use 'events' instead
         # events: UA_ENABLE_SUBSCRIPTIONS_EVENTS=On
         # alarms,conditions,events: UA_ENABLE_SUBSCRIPTIONS_EVENTS=On and UA_ENABLE_SUBSCRIPTIONS_ALARMS_CONDITIONS=On
-        "subscription": [True, False, "With Events", "events", "alarms,conditions,events"],
+        "subscription": [True, False, "events", "alarms,conditions,events"],
         # False: UA_ENABLE_METHODCALLS=Off
         # True: UA_ENABLE_METHODCALLS=Onn
         "methods": [True, False],
@@ -99,8 +98,6 @@ class Open62541Conan(ConanFile):
         "compiled_nodeset_descriptions": [True, False],
         # UA_NAMESPACE_ZERO=option.namespace_zero (only if compiled_nodeset_descriptions=False)
         "namespace_zero": ["MINIMAL", "REDUCED", "FULL"],
-        # UA_ENABLE_MICRO_EMB_DEV_PROFILE=embedded_profile
-        "embedded_profile": [True, False],
         # UA_ENABLE_TYPENAMES=typenames
         "typenames": [True, False],
         # UA_ENABLE_HARDENING=hardening
@@ -135,7 +132,6 @@ class Open62541Conan(ConanFile):
         "data_access": True,
         "compiled_nodeset_descriptions": True,
         "namespace_zero": "FULL",
-        "embedded_profile": False,
         "typenames": True,
         "hardening": True,
         "cpp_compatible": False,
@@ -146,8 +142,6 @@ class Open62541Conan(ConanFile):
 
     exports = "submoduledata.yml"
 
-    short_paths = True
-
     def export_sources(self):
         export_conandata_patches(self)
 
@@ -155,10 +149,9 @@ class Open62541Conan(ConanFile):
         if self.settings.os == "Windows":
             del self.options.fPIC
 
-        del self.options.embedded_profile
-
-        # NodesetLoader has only rudimentary Windows support --> disabling for now. This might change in the future.
-        if Version(self.version) < "1.4.11.1" or self.settings.os != "Linux":
+        # NodesetLoader has only rudimentary Windows support --> disabling for now.
+        # This might change in the future.
+        if self.settings.os != "Linux":
             del self.options.nodeset_loader
 
     def configure(self):
@@ -168,12 +161,6 @@ class Open62541Conan(ConanFile):
         if not self.options.cpp_compatible:
             self.settings.rm_safe("compiler.libcxx")
             self.settings.rm_safe("compiler.cppstd")
-
-        if self.options.subscription == "With Events":
-            # Deprecated in 1.2.2
-            self.output.warning(
-                f"`{self.ref}:subscription=With Events` is deprecated. Use `{self.ref}:subscription=events` instead")
-            self.options.subscription = "events"
 
         if self.options.web_socket:
             self.options["libwebsockets"].with_ssl = self.options.encryption
@@ -191,11 +178,7 @@ class Open62541Conan(ConanFile):
         if self.options.discovery == "With Multicast" or "multicast" in str(self.options.discovery):
             self.requires("pro-mdnsd/0.8.4")
         if self.options.get_safe("nodeset_loader"):
-            if Version(self.version) >= "1.5.0":
-                self.requires("libxml2/[>=2.12.5 <3]")
-            else:
-                # version 1.4.11.1 with libxml2 2.14.x doesnt work because open62541 uses deprecated/remove APIs
-                self.requires("libxml2/[>=2.12.5 <=2.13.8]")
+            self.requires("libxml2/[>=2.12.5 <3]")
 
     def validate(self):
         if not self.options.subscription:
@@ -216,17 +199,18 @@ class Open62541Conan(ConanFile):
                 raise ConanInvalidConfiguration(
                     "Older clang compiler version than 5.0 are not supported")
 
-        if self.options.pub_sub != False and self.settings.os != "Linux":
+        if "Ethernet" in str(self.options.pub_sub) and self.settings.os != "Linux":
             raise ConanInvalidConfiguration(
                 "PubSub over Ethernet is not supported for your OS!")
 
         # Due to https://github.com/open62541/open62541/issues/4687 we cannot build with Windows + shared
-        if self.settings.os == "Windows" and self.options.shared:
+        # in older releases
+        if Version(self.version) < "1.5" and self.settings.os == "Windows" and self.options.shared:
             raise ConanInvalidConfiguration(
                 f"{self.ref} doesn't properly support shared lib on Windows")
 
         if self.options.web_socket:
-            if self.options["libwebsockets"].with_ssl != self.options.encryption:
+            if self.dependencies["libwebsockets"].options.with_ssl != self.options.encryption:
                 raise ConanInvalidConfiguration(
                     "When web_socket is enabled, libwebsockets:with_ssl must have the value of open62541:encryption")
 
@@ -234,7 +218,7 @@ class Open62541Conan(ConanFile):
             # NodesetLoader requires parsing to be enabled
             raise ConanInvalidConfiguration("When nodeset_loader is enabled, then parsing has to be enabled too.")
 
-        if self.options.get_safe("nodeset_loader") and Version(self.version) >= "1.4.13" and Version(self.version) < "1.5.0":
+        if self.options.get_safe("nodeset_loader") and Version(self.version) < "1.5.0":
             raise ConanInvalidConfiguration("nodeset_loader option does not work properly with this version - fixed in 1.5.0")
 
     def source(self):
@@ -285,8 +269,7 @@ class Open62541Conan(ConanFile):
         if self.settings.os == "Neutrino":
             tc.cache_variables["UA_ARCHITECTURE"] = "posix"
 
-        if version >= "1.4.11.1":
-            tc.variables["UA_ENABLE_DEBUG_SANITIZER"] = False
+        tc.variables["UA_ENABLE_DEBUG_SANITIZER"] = False
 
         if self.options.subscription != False:
             if "events" in str(self.options.subscription):
@@ -354,8 +337,7 @@ class Open62541Conan(ConanFile):
         # Honor BUILD_SHARED_LIBS from conan_toolchain (see https://github.com/conan-io/conan/issues/11840)
         tc.cache_variables["CMAKE_POLICY_DEFAULT_CMP0077"] = "NEW"
 
-        if version >= "1.4.11.1":
-            tc.cache_variables["UA_ENABLE_NODESETLOADER"] = self.options.nodeset_loader if self.settings.os == "Linux" else False
+        tc.cache_variables["UA_ENABLE_NODESETLOADER"] = self.options.get_safe("nodeset_loader", False)
 
         tc.generate()
         tc = CMakeDeps(self)
@@ -365,9 +347,8 @@ class Open62541Conan(ConanFile):
     def _patch_sources(self):
         apply_conandata_patches(self)
         rm(self, "FindPython3.cmake", os.path.join(self.source_folder, "tools", "cmake"))
-        if Version(self.version) >= "1.4.11.1":
-            replace_in_file(self, os.path.join(self.source_folder, "deps", "nodesetLoader", "CMakeLists.txt"),
-                        "find_package(LibXml2 REQUIRED QUIET)", "find_package(LibXml2 REQUIRED GLOBAL)")
+        replace_in_file(self, os.path.join(self.source_folder, "deps", "nodesetLoader", "CMakeLists.txt"),
+                    "find_package(LibXml2 REQUIRED QUIET)", "find_package(LibXml2 REQUIRED GLOBAL)")
 
     def build(self):
         cmake = CMake(self)
@@ -401,11 +382,16 @@ class Open62541Conan(ConanFile):
                 os.remove(cmake_file)
 
         rmdir(self, os.path.join(self.package_folder, "lib", "pkgconfig"))
-        rmdir(self, os.path.join(self.package_folder, "share"))
 
-        tools_dir = os.path.join(self.package_folder, "res", "tools")
-        copy(self, "generate_*.py", src=self._tools_subfolder, dst=tools_dir)
-        copy(self, "nodeset_compiler/*", src=self._tools_subfolder, dst=tools_dir)
+        # For newer versions, just keep the structure as it is in share,
+        # which contains all these files
+        if Version(self.version) < "1.5.0":
+            rmdir(self, os.path.join(self.package_folder, "share"))
+
+            tools_dir = os.path.join(self.package_folder, "res", "tools")
+            copy(self, "generate_*.py", src=self._tools_subfolder, dst=tools_dir)
+            copy(self, "nodeset_compiler/*", src=self._tools_subfolder, dst=tools_dir,
+                 excludes=["**.pyc"])
 
     @staticmethod
     def _chmod_plus_x(filename):
@@ -413,37 +399,36 @@ class Open62541Conan(ConanFile):
             os.chmod(filename, os.stat(filename).st_mode | 0o111)
 
     def package_info(self):
-        self.cpp_info.libs = collect_libs(self)
-        self.cpp_info.includedirs = ["include"]
+        self.cpp_info.libs = ["open62541"]
+
+        if Version(self.version) >= "1.5.0":
+            tools_dir = os.path.join(self.package_folder, "share", "open62541")
+            schema_dir = os.path.join(tools_dir, "schema")
+            self.cpp_info.set_property("cmake_extra_variables", {
+                "open62541_TOOLS_DIR": tools_dir.replace("\\", "/"),
+                "open62541_SCHEMA_DIR": schema_dir.replace("\\", "/"),
+                "open62541_NS0_NODESETS": os.path.join(schema_dir, "Opc.Ua.NodeSet2.xml").replace("\\", "/"),
+            })
+        else:
+            tools_dir = os.path.join(self.package_folder, "res", "tools")
 
         # required for creating custom servers from ua-nodeset
-        self.conf_info.define("user.open62541:tools_dir", os.path.join(
-            self.package_folder, "res", "tools").replace("\\", "/"))
-        self._chmod_plus_x(os.path.join(self.package_folder,
-                           "res", "tools", "generate_nodeid_header.py"))
+        self.conf_info.define("user.open62541:tools_dir", tools_dir.replace("\\", "/"))
+        self._chmod_plus_x(os.path.join(tools_dir, "generate_nodeid_header.py"))
 
         if self.options.single_header:
             self.cpp_info.defines.append("UA_ENABLE_AMALGAMATION")
         else:
             self.cpp_info.includedirs.append(
                 os.path.join("include", "open62541", "plugin"))
-            if Version(self.version) < "1.4.0":
-                if self.settings.os == "Windows":
-                    self.cpp_info.includedirs.append(
-                        os.path.join("include", "open62541", "win32"))
-                else:
-                    self.cpp_info.includedirs.append(
-                        os.path.join("include", "open62541", "posix"))
 
         if self.settings.os == "Windows":
             self.cpp_info.system_libs.append("ws2_32")
-            if Version(self.version) >= "1.4.6":
-                self.cpp_info.system_libs.append("iphlpapi")
+            self.cpp_info.system_libs.append("iphlpapi")
         elif self.settings.os in ("Linux", "FreeBSD"):
             self.cpp_info.system_libs.extend(["pthread", "m", "rt"])
         elif self.settings.os == "Neutrino":
             self.cpp_info.system_libs.extend(["m", "rt", "socket"])
 
         self.cpp_info.builddirs.append(self._module_subfolder)
-        self.cpp_info.set_property("cmake_build_modules", [
-                                   self._module_file_rel_path])
+        self.cpp_info.set_property("cmake_build_modules", [self._module_file_rel_path])
