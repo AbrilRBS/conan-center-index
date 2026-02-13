@@ -57,10 +57,10 @@ class ImGuiSFMLConan(ConanFile):
         tc = CMakeToolchain(self)
         tc.cache_variables["IMGUI_SFML_FIND_SFML"] = True
         tc.cache_variables["IMGUI_DIR"] = "UNUSED"
-        tc.cache_variables["IMGUI_SFML_IMGUI_DEMO"] = True
+        tc.cache_variables["IMGUI_SFML_IMGUI_DEMO"] = False
 
         tc.cache_variables["IMGUI_SFML_BUILD_TESTING"] = False
-        tc.cache_variables["IMGUI_SFML_BUILD_EXAMPLES"] = True
+        tc.cache_variables["IMGUI_SFML_BUILD_EXAMPLES"] = False
         tc.generate()
 
         tc = CMakeDeps(self)
