@@ -6,7 +6,6 @@ find_package(Torch REQUIRED CONFIG)
 
 #https://pytorch.org/cppdocs/installing.html
 add_executable(${PROJECT_NAME} test_package.cpp)
-target_link_libraries(${PROJECT_NAME} PRIVATE libtorch::torch)
 
 if (TARGET libtorch::torch_cuda)
     find_package(CUDAToolkit REQUIRED)
@@ -20,3 +19,6 @@ if (TARGET libtorch::torch_cuda)
         CUDA::cuda_driver
     )
 endif()
+
+target_link_libraries(${PROJECT_NAME} PRIVATE ${TORCH_LIBRARIES})
+
