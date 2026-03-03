@@ -34,3 +34,33 @@ index 4d95661..8117eee 100644
  };
  // Segmented sort by full sort algorithm:.
  // Say we are sorting a (2, 3) tensor. We have in flattened form:
+diff --git a/cmake/Dependencies.cmake b/cmake/Dependencies.cmake
+index e48bac1..4723b39 100644
+--- a/cmake/Dependencies.cmake
++++ b/cmake/Dependencies.cmake
+@@ -934,20 +934,20 @@ endif()
+ 
+ # ---[ nvtx
+ if(USE_SYSTEM_NVTX)
+-  find_path(nvtx3_dir NAMES nvtx3 PATHS ${CUDA_INCLUDE_DIRS})
++  find_package(nvtx REQUIRED CONFIG)
+ else()
+   find_path(nvtx3_dir NAMES nvtx3 PATHS "${PROJECT_SOURCE_DIR}/third_party/NVTX/c/include" NO_DEFAULT_PATH)
+ endif()
+-find_package_handle_standard_args(nvtx3 DEFAULT_MSG nvtx3_dir)
+-if(nvtx3_FOUND)
++if(nvtx_FOUND)
+   add_library(torch::nvtx3 INTERFACE IMPORTED)
+-  target_include_directories(torch::nvtx3 INTERFACE "${nvtx3_dir}")
+-  target_compile_definitions(torch::nvtx3 INTERFACE TORCH_CUDA_USE_NVTX3)
++  target_link_libraries(torch::nvtx3 INTERFACE nvtx::nvtx)
+ else()
+   message(WARNING "Cannot find NVTX3, find old NVTX instead")
+   add_library(torch::nvtoolsext INTERFACE IMPORTED)
+   set_property(TARGET torch::nvtoolsext PROPERTY INTERFACE_LINK_LIBRARIES CUDA::nvToolsExt)
+ endif()
++  set_property(TARGET torch::nvtoolsext PROPERTY INTERFACE_LINK_LIBRARIES CUDA::nvToolsExt)
++endif()
+ 
+ 
+ # ---[ HIP

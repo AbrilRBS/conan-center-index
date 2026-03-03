@@ -97,7 +97,6 @@ class LibtorchRecipe(ConanFile):
         self.requires("openblas/[^0.3.27]", transitive_libs=True)
         self.requires("opentelemetry-cpp/1.24.0")
         self.requires("pocketfft/0.0.0.cci.20240801")
-        self.requires("pybind11/3.0.1")
         self.requires("protobuf/[>=4.25.3 <7]")
         self.requires("psimd/cci.20200517")
         self.requires("pthreadpool/cci.20231129", transitive_headers=True)
@@ -237,7 +236,7 @@ class LibtorchRecipe(ConanFile):
         tc.cache_variables["USE_CUDA"] = self.options.with_cuda
         tc.cache_variables["USE_CUDNN"] = False
         tc.cache_variables["USE_CUDSS"] = False
-        tc.cache_variables["USE_CUSPARSELT"] = True
+        tc.cache_variables["USE_CUSPARSELT"] = False
         tc.cache_variables["USE_FLASH_ATTENTION"] = False
         tc.cache_variables["USE_MEM_EFF_ATTENTION"] = False
         # TODO: Generate this in cuda-toolkit, not here
@@ -350,7 +349,6 @@ class LibtorchRecipe(ConanFile):
             "pthreadpool::pthreadpool",
             "sleef::sleef",
             "xnnpack::xnnpack",
-            "pybind11::pybind11",
         ]
         if self._has_qnnpack:
             torch_cpu.requires.append("pytorch_qnnpack")
@@ -378,7 +376,7 @@ class LibtorchRecipe(ConanFile):
 
             torch_cuda = _whole_archive(self.cpp_info.components["torch_cuda"], "torch_cuda")
             # TODO: verify if caffe2_nvrtc has to be linked to torch_cuda
-            torch_cuda.requires = ["torch_cpu", "c10_cuda", "cutlass::cutlass", "cuda-toolkit::cuda-toolkit"]
+            torch_cuda.requires = ["torch_cpu", "c10_cuda", "cutlass::cutlass", "cuda-toolkit::cuda-toolkit", "nvtx::nvtx"]
 
         # Torch global component
         self.cpp_info.components["torch"].libs = ["torch"]
