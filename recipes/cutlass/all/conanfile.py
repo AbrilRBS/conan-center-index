@@ -66,7 +66,7 @@ class CutlassConan(ConanFile):
         tc.cache_variables["CUTLASS_REVISION"]=f"v{self.version}"
         tc.cache_variables["CUTLASS_NATIVE_CUDA"] = False
         tc.cache_variables["CUTLASS_ENABLE_HEADERS_ONLY"] = True
-        tc.cache_variables["CUTLASS_ENABLE_TOOLS"] = False
+        tc.cache_variables["CUTLASS_ENABLE_TOOLS"] = True
         tc.cache_variables["CUTLASS_ENABLE_LIBRARY"] = False
         tc.cache_variables["CUTLASS_ENABLE_PROFILER"] = False
         tc.cache_variables["CUTLASS_ENABLE_PERFORMANCE"] = False
