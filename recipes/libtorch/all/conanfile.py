@@ -113,6 +113,7 @@ class LibtorchRecipe(ConanFile):
         if self.options.with_cuda:
             self.requires("cuda-toolkit/12.6.0")
             self.requires("cutlass/4.3.5")
+            self.requires("nvtx/3.3.0")
         if self.options.with_gflags:
             self.requires("gflags/2.2.2", transitive_headers=True)
         if self.options.get_safe("with_kleidiai"):
