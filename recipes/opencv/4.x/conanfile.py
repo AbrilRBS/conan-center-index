@@ -1109,6 +1109,8 @@ class OpenCVConan(ConanFile):
         # text module dependencies
         if self.options.get_safe("with_tesseract"):
             self.requires("tesseract/5.3.3")
+        if self.options.get_safe("with_cuda"):
+            self.requires("cuda-toolkit/12.6.0")
 
     def package_id(self):
         # deprecated options
@@ -1170,6 +1172,9 @@ class OpenCVConan(ConanFile):
                 self.tool_requires("wayland/<host_version>")
             if not self.conf.get("tools.gnu:pkg_config", check_type=str):
                 self.tool_requires("pkgconf/2.1.0")
+
+        if self.options.get_safe("with_cuda"):
+            self.requires("cuda-toolkit/<host_version>")
 
     def source(self):
         get(self, **self.conan_data["sources"][self.version][0], strip_root=True)

@@ -10,6 +10,11 @@ class libtorchTestConan(ConanFile):
 
     def requirements(self):
         self.requires(self.tested_reference_str)
+        self.requires("cuda-toolkit/12.6.0")
+
+    def build_requirements(self):
+        self.tool_requires("cuda-toolkit/<host_version>")
+
 
     def build(self):
         cmake = CMake(self)

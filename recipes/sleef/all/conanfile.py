@@ -46,8 +46,12 @@ class SleefConan(ConanFile):
             # Fails with "No rule to make target `/bin/mkrename'"
             raise ConanInvalidConfiguration(f"{self.ref} does not support cross-building")
 
+    def requirements(self):
+        self.requires("cuda-toolkit/12.6.0")
+
     def build_requirements(self):
         self.tool_requires("cmake/[>=3.18]")
+        self.tool_requires("cuda-toolkit/<host_version>")
 
     def source(self):
         get(self, **self.conan_data["sources"][self.version], strip_root=True)
@@ -62,9 +66,9 @@ class SleefConan(ConanFile):
         tc.cache_variables["SLEEF_SHOW_CONFIG"] = True
         tc.cache_variables["SLEEF_DISABLE_FFTW"] = True
         tc.cache_variables["SLEEF_DISABLE_MPFR"] = True
-        tc.cache_variables["SLEEF_DISABLE_SVE"] = True
+        tc.cache_variables["SLEEF_DISABLE_SVE"] = False
         tc.cache_variables["SLEEF_DISABLE_SSL"] = True
-        tc.cache_variables["SLEEF_ENABLE_CUDA"] = False
+        tc.cache_variables["SLEEF_ENABLE_CUDA"] = True
         tc.cache_variables["SLEEF_ENABLE_TLFLOAT"] = False
         tc.cache_variables["SLEEF_ENABLE_TESTER4"] = False
         tc.generate()

@@ -7,4 +7,5 @@ patches:
   "2.9.1":
     - patch_file: "patches/2.9.1-deps.patch"
       patch_description: "Fix CMake dependencies and python imports"
-    - patch_file: "patches/2.9.1-cuda.patch"
+    #- patch_file: "patches/2.9.1-cuda.patch"
+#    - patch_file: "patches/2.9.1-cuda-2.patch"
