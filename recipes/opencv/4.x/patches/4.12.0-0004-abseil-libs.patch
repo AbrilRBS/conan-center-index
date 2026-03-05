@@ -1,0 +1,14 @@
+diff --git a/modules/dnn/CMakeLists.txt b/modules/dnn/CMakeLists.txt
+index 382379c..1fcff0e 100644
+--- a/modules/dnn/CMakeLists.txt
++++ b/modules/dnn/CMakeLists.txt
+@@ -159,6 +159,9 @@ if(NOT BUILD_PROTOBUF)
+   list(APPEND include_dirs ${Protobuf_INCLUDE_DIRS})
+ endif()
+ 
++find_package(absl REQUIRED CONFIG)
++list(APPEND libs ${absl_LIBRARIES})
++
+ set(sources_options "")
+ 
+ list(APPEND libs ${LAPACK_LIBRARIES})
