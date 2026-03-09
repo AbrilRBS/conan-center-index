@@ -71,7 +71,7 @@ class SVTAV1Conan(ConanFile):
         cmake_layout(self, src_folder="src")
 
     def requirements(self):
-        self.requires("cpuinfo/cci.20231129")
+        self.requires("cpuinfo/cci.20251210")
 
     def validate(self):
         # https://gitlab.com/AOMediaCodec/SVT-AV1/-/issues/2081
