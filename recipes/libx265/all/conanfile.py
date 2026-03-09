@@ -147,6 +147,12 @@ class Libx265Conan(ConanFile):
         cmake = CMake(self)
         cmake.install()
 
+        if self.options.bit_depth != 8:
+            lib_name = f"libx265_main{self.options.bit_depth}.so"
+            self.run(f'cp '
+                     f'{os.path.join(self.package_folder, "lib", "libx265.so")} '
+                     f'{os.path.join(self.package_folder, "bin", lib_name)}')
+
         if self.options.shared:
             if is_msvc(self):
                 static_lib = "x265-static.lib"
