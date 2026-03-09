@@ -35,10 +35,10 @@ index 4d95661..8117eee 100644
  // Segmented sort by full sort algorithm:.
  // Say we are sorting a (2, 3) tensor. We have in flattened form:
 diff --git a/cmake/Dependencies.cmake b/cmake/Dependencies.cmake
-index e48bac1..53d926b 100644
+index e48bac1..7cc56ed 100644
 --- a/cmake/Dependencies.cmake
 +++ b/cmake/Dependencies.cmake
-@@ -934,15 +934,13 @@ endif()
+@@ -934,15 +934,14 @@ endif()
  
  # ---[ nvtx
  if(USE_SYSTEM_NVTX)
@@ -54,6 +54,7 @@ index e48bac1..53d926b 100644
 -  target_include_directories(torch::nvtx3 INTERFACE "${nvtx3_dir}")
 -  target_compile_definitions(torch::nvtx3 INTERFACE TORCH_CUDA_USE_NVTX3)
 +  target_link_libraries(torch::nvtx3 INTERFACE nvtx::nvtx)
++  target_compile_definitions(torch::nvtx3 PUBLIC TORCH_CUDA_USE_NVTX3)
  else()
    message(WARNING "Cannot find NVTX3, find old NVTX instead")
    add_library(torch::nvtoolsext INTERFACE IMPORTED)
