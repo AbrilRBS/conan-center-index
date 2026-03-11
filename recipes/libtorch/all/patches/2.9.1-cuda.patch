@@ -1,14 +1,28 @@
 diff --git a/aten/src/ATen/CMakeLists.txt b/aten/src/ATen/CMakeLists.txt
-index 0266a1f..6909e65 100644
+index 0266a1f..b1e3cd4 100644
 --- a/aten/src/ATen/CMakeLists.txt
 +++ b/aten/src/ATen/CMakeLists.txt
-@@ -661,8 +661,8 @@ if(USE_CUDA AND NOT USE_ROCM)
+@@ -219,9 +219,10 @@ if(USE_CUDA AND (USE_FLASH_ATTENTION OR USE_MEM_EFF_ATTENTION))
+   target_include_directories(flash_attention SYSTEM PUBLIC
+     ${PROJECT_SOURCE_DIR}/third_party/flash-attention/csrc
+     ${PROJECT_SOURCE_DIR}/third_party/flash-attention/include
+-    ${PROJECT_SOURCE_DIR}/third_party/cutlass/include
+     ${PROJECT_SOURCE_DIR}/third_party/flash-attention/csrc/flash_attn/src
+   )
++  find_package(NvidiaCutlass REQUIRED CONFIG GLOBAL)
++  target_link_libraries(flash_attention PUBLIC nvidia::cutlass::cutlass)
+ 
+   target_compile_definitions(flash_attention PRIVATE
+     # Copied from https://github.com/pytorch/pytorch/blob/a10024d7dea47c52469059a47efe376eb20adca0/caffe2/CMakeLists.txt#L1431
+@@ -661,8 +662,10 @@ if(USE_CUDA AND NOT USE_ROCM)
    add_definitions(-DCUTLASS_ENABLE_TENSOR_CORE_MMA=1)
    add_definitions(-DCUTLASS_ENABLE_SM90_EXTENDED_MMA_SHAPES=1)
    add_definitions(-DCUTE_SM90_EXTENDED_MMA_SHAPES_ENABLED)
 -  list(APPEND ATen_CUDA_INCLUDE ${CMAKE_CURRENT_SOURCE_DIR}/../../../third_party/cutlass/include)
 -  list(APPEND ATen_CUDA_INCLUDE ${CMAKE_CURRENT_SOURCE_DIR}/../../../third_party/cutlass/tools/util/include)
-+  find_package(NvidiaCutlass REQUIRED CONFIG GLOBAL)
++  if (NOT TARGET nvidia::cutlass::cutlass)
++    find_package(NvidiaCutlass REQUIRED CONFIG GLOBAL)
++  endif()
 +  list(APPEND ATen_CUDA_DEPENDENCY_LIBS nvidia::cutlass::cutlass)
  
    # Add FBGEMM_GENAI include directories for torch_ops.h

@@ -143,7 +143,7 @@ class LibtorchRecipe(ConanFile):
         get(self, **self.conan_data["sources"][self.version], strip_root=True)
         apply_conandata_patches(self)
         # Remove unneeded third_party folders
-        third_party_allowed = ["miniz-3.0.2", "kineto"]
+        third_party_allowed = ["flash-attention", "miniz-3.0.2", "kineto"]
         for folder in Path(self.source_folder).joinpath("third_party").iterdir():
             if folder.is_dir() and folder.name not in third_party_allowed:
                 rmdir(self, folder)
@@ -237,8 +237,8 @@ class LibtorchRecipe(ConanFile):
         tc.cache_variables["USE_CUDNN"] = False
         tc.cache_variables["USE_CUDSS"] = False
         tc.cache_variables["USE_CUSPARSELT"] = False
-        tc.cache_variables["USE_FLASH_ATTENTION"] = False
-        tc.cache_variables["USE_MEM_EFF_ATTENTION"] = False
+        tc.cache_variables["USE_FLASH_ATTENTION"] = True
+        tc.cache_variables["USE_MEM_EFF_ATTENTION"] = True
         # TODO: Generate this in cuda-toolkit, not here
         # tc.cache_variables["CUDA_NVCC_EXECUTABLE"] = os.path.join(self.dependencies["cuda-toolkit"].cpp_info.bindir, "nvcc")
         # tc.cache_variables["CUDA_TOOLKIT_ROOT_DIR"] = self.dependencies["cuda-toolkit"].package_folder
