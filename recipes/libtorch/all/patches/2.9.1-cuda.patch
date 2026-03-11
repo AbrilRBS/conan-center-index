@@ -48,6 +48,19 @@ index 4d95661..8117eee 100644
  };
  // Segmented sort by full sort algorithm:.
  // Say we are sorting a (2, 3) tensor. We have in flattened form:
+diff --git a/caffe2/CMakeLists.txt b/caffe2/CMakeLists.txt
+index bb07522..53208a4 100644
+--- a/caffe2/CMakeLists.txt
++++ b/caffe2/CMakeLists.txt
+@@ -1070,7 +1070,7 @@ elseif(USE_CUDA)
+     target_include_directories(torch_cuda SYSTEM PUBLIC
+       $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/third_party/flash-attention/csrc>
+       $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/third_party/flash-attention/include>
+-      $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/third_party/cutlass/include>
++
+       $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/third_party/flash-attention/csrc/flash_attn/src>
+       $<INSTALL_INTERFACE:include>
+     )
 diff --git a/cmake/Dependencies.cmake b/cmake/Dependencies.cmake
 index e48bac1..eb41115 100644
 --- a/cmake/Dependencies.cmake
