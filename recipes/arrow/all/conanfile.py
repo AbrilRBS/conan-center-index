@@ -17,49 +17,47 @@ class ArrowConan(ConanFile):
     license = ("Apache-2.0",)
     url = "https://github.com/conan-io/conan-center-index"
     homepage = "https://arrow.apache.org/"
-    topics = ("memory", "gandiva", "parquet", "skyhook", "acero", "hdfs", "csv", "cuda", "gcs", "json", "hive", "s3", "grpc")
+    topics = ("memory", "gandiva", "parquet", "acero", "hdfs", "csv", "cuda", "gcs", "json", "hive", "s3", "grpc")
     package_type = "library"
     settings = "os", "arch", "compiler", "build_type"
     options = {
         "shared": [True, False],
         "fPIC": [True, False],
         "gandiva":  [True, False],
-        "parquet": ["auto", True, False],
+        "parquet": [True, False],
         "substrait": [True, False],
-        "skyhook": [True, False],
         "acero": [True, False],
         "cli": [True, False],
-        "compute": ["auto", True, False],
-        "dataset_modules":  ["auto", True, False],
+        "compute": [True, False],
+        "dataset_modules":  [True, False],
         "deprecated": [True, False],
         "encryption": [True, False],
         "filesystem_layer":  [True, False],
         "hdfs_bridgs": [True, False],
-        "plasma": [True, False, "deprecated"],
         "simd_level": ["default", "sse4_2", "avx2", "avx512", "neon", "disabled"],
         "runtime_simd_level": ["sse4_2", "avx2", "avx512", "max", "disabled"],
         "with_backtrace": [True, False],
-        "with_boost": ["auto", True, False],
+        "with_boost": [True, False],
         "with_csv": [True, False],
         "with_cuda": [True, False],
-        "with_flight_rpc":  ["auto", True, False],
+        "with_flight_rpc":  [True, False],
         "with_flight_sql":  [True, False],
         "with_gcs": [True, False],
-        "with_gflags": ["auto", True, False],
-        "with_glog": ["auto", True, False],
-        "with_grpc": ["auto", True, False],
-        "with_jemalloc": ["auto", True, False],
+        "with_gflags": [True, False],
+        "with_glog": [True, False],
+        "with_grpc": [True, False],
+        "with_jemalloc": [True, False],
         "with_mimalloc": [True, False],
         "with_json": [True, False],
-        "with_thrift": ["auto", True, False],
-        "with_llvm": ["auto", True, False],
-        "with_openssl": ["auto", True, False],
+        "with_thrift": [True, False],
+        "with_llvm": [True, False],
+        "with_openssl": [True, False],
         "with_opentelemetry": [True, False],
         "with_orc": [True, False],
-        "with_protobuf": ["auto", True, False],
-        "with_re2": ["auto", True, False],
+        "with_protobuf": [True, False],
+        "with_re2": [True, False],
         "with_s3": [True, False],
-        "with_utf8proc": ["auto", True, False],
+        "with_utf8proc": [True, False],
         "with_brotli": [True, False],
         "with_bz2": [True, False],
         "with_lz4": [True, False],
@@ -72,7 +70,6 @@ class ArrowConan(ConanFile):
         "fPIC": True,
         "gandiva": False,
         "parquet": True,
-        "skyhook": False,
         "substrait": False,
         "acero": False,
         "cli": False,
@@ -82,7 +79,6 @@ class ArrowConan(ConanFile):
         "encryption": False,
         "filesystem_layer": True,
         "hdfs_bridgs": False,
-        "plasma": "deprecated",
         #"simd_level": "default", # see config_options
         # "runtime_simd_level": "max", # see config_options
         "with_backtrace": False,
@@ -114,18 +110,6 @@ class ArrowConan(ConanFile):
         "with_zlib": True,
         "with_zstd": False,
     }
-    short_paths = True
-
-    @property
-    def _min_cppstd(self):
-        if Version(self.version) >= "23.0.0":
-            # arrow >= 23.0.0 requires C++20.
-            # https://github.com/apache/arrow/issues/45885
-            return "20"
-        else:
-            # arrow >= 10.0.0 requires C++17.
-            # https://github.com/apache/arrow/pull/13991
-            return "17"
 
     def export_sources(self):
         export_conandata_patches(self)
@@ -147,9 +131,6 @@ class ArrowConan(ConanFile):
             self.options.simd_level = "default"
             self.options.runtime_simd_level = "max"
 
-        if Version(self.version) >= "22.0.0":
-            del self.options.skyhook
-
     def configure(self):
         if self.options.shared:
             self.options.rm_safe("fPIC")
@@ -158,8 +139,7 @@ class ArrowConan(ConanFile):
         cmake_layout(self, src_folder="src")
 
     def _requires_rapidjson(self):
-        return (self.options.with_json or self.options.encryption or
-                (Version(self.version) >= "21.0.0" and self.options.parquet))
+        return self.options.with_json or self.options.encryption or self.options.parquet
 
     def requirements(self):
         if self.options.with_thrift:
@@ -214,13 +194,6 @@ class ArrowConan(ConanFile):
             self.requires("orc/2.0.0")
 
     def validate(self):
-        # Do not allow options with 'auto' value
-        # TODO: Remove "auto" from the possible values for these options
-        auto_options = [option for option, value in self.options.items() if value == "auto"]
-        if auto_options:
-            raise ConanException("Options with value 'auto' are deprecated. Please set them true/false or use its default value."
-                                 f" Please change the following options: {auto_options}")
-
         # From https://github.com/conan-io/conan-center-index/pull/23163#issuecomment-2039808851
         if self.options.gandiva:
             if not self.options.with_re2:
@@ -248,10 +221,8 @@ class ArrowConan(ConanFile):
         if self.options.with_flight_rpc and not self.options.with_grpc:
             raise ConanException("'with_grpc' option should be True when 'with_flight_rpc=True'")
 
-        check_min_cppstd(self, self._min_cppstd)
+        check_min_cppstd(self, 20)
 
-        if self.options.get_safe("skyhook", False):
-            raise ConanInvalidConfiguration("CCI has no librados recipe (yet)")
         if self.options.with_cuda:
             raise ConanInvalidConfiguration("CCI has no cuda recipe (yet)")
         if self.options.with_s3 and not self.dependencies["aws-sdk-cpp"].options.config:
@@ -276,17 +247,12 @@ class ArrowConan(ConanFile):
             self.tool_requires("protobuf/<host_version>")
         if self.options.with_grpc:
             self.tool_requires("grpc/<host_version>")
-        if Version(self.version) >= "22.0.0":
-            self.tool_requires("cmake/[>=3.26 <4]")
-        elif Version(self.version) >= "20.0.0":
-            self.tool_requires("cmake/[>=3.25 <4]")
-        else:
-            self.tool_requires("cmake/[>=3.16 <4]")
+        self.tool_requires("cmake/[>=3.26]")
 
     def source(self):
         get(self, **self.conan_data["sources"][self.version],
             filename=f"apache-arrow-{self.version}.tar.gz", strip_root=True)
-        self._patch_sources()
+        apply_conandata_patches(self)
 
     def generate(self):
         tc = CMakeToolchain(self)
@@ -413,13 +379,9 @@ class ArrowConan(ConanFile):
         deps.set_property("libbacktrace", "cmake_file_name", "Backtrace")
         deps.generate()
 
-    def _patch_sources(self):
-        apply_conandata_patches(self)
-
     def build(self):
         cmake = CMake(self)
-        cmake.configure(build_script_folder=os.path.join(self.source_folder, "cpp"),
-                        cli_args=["--debug-find-pkg=LibXml2"])
+        cmake.configure(build_script_folder=os.path.join(self.source_folder, "cpp"))
         cmake.build()
 
     def package(self):
@@ -464,20 +426,16 @@ class ArrowConan(ConanFile):
             if self.options.dataset_modules:
                 self.cpp_info.components["libarrow_substrait"].requires.append("dataset")
 
-
-        # Plasma was deprecated in Arrow 12.0.0
-        del self.options.plasma
-
         if self.options.acero:
             self.cpp_info.components["libacero"].set_property("pkg_config_name", "acero")
             self.cpp_info.components["libacero"].set_property("cmake_target_name", f"ArrowAcero::arrow_acero_{cmake_suffix}")
             self.cpp_info.components["libacero"].libs = [f"arrow_acero{suffix}"]
             self.cpp_info.components["libacero"].requires = ["libarrow"]
-            if Version(self.version) >= "21.0.0" and self.options.compute:
+            if self.options.compute:
                 # libacero depends on compute
                 self.cpp_info.components["libacero"].requires.append("libarrow_compute")
 
-        if Version(self.version) >= "21.0.0" and self.options.compute:
+        if self.options.compute:
             self.cpp_info.components["libarrow_compute"].set_property("pkg_config_name", "arrow_compute")
             self.cpp_info.components["libarrow_compute"].set_property("cmake_target_name", f"ArrowCompute::arrow_compute_{cmake_suffix}")
             self.cpp_info.components["libarrow_compute"].libs = [f"arrow_compute{suffix}"]
