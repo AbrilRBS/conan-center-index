@@ -30,7 +30,6 @@ class LibcurlConan(ConanFile):
         "with_libssh2": [True, False],
         "with_libidn": [True, False],
         "with_libpsl": [True, False],
-        "with_largemaxwritesize": [True, False],
         "with_nghttp2": [True, False],
         "with_zlib": [True, False],
         "with_brotli": [True, False],
@@ -42,9 +41,9 @@ class LibcurlConan(ConanFile):
         "with_verbose_strings": [True, False],
         "with_ca_bundle": [False, "auto", "ANY"],
         "with_ca_path": [False, "auto", "ANY"],
-        "with_ca_fallback": [True, False],
         "with_websockets": [True, False],
         "with_apple_sectrust": [True, False],
+        "with_unix_sockets": [True, False],
     }
     default_options = {
         "shared": False,
@@ -55,7 +54,6 @@ class LibcurlConan(ConanFile):
         "with_libssh2": False,
         "with_libidn": False,
         "with_libpsl": False,
-        "with_largemaxwritesize": False,
         "with_nghttp2": False,
         "with_zlib": True,
         "with_brotli": False,
@@ -67,9 +65,9 @@ class LibcurlConan(ConanFile):
         "with_verbose_strings": True,
         "with_ca_bundle": "auto",
         "with_ca_path": "auto",
-        "with_ca_fallback": False,
         "with_websockets": True,
         "with_apple_sectrust": False,
+        "with_unix_sockets": True,
     }
 
     @property
@@ -229,7 +227,7 @@ class LibcurlConan(ConanFile):
         else:
             tc.cache_variables["CURL_CA_PATH"] = "none"
 
-        tc.cache_variables["CURL_CA_FALLBACK"] = self.options.with_ca_fallback
+        tc.cache_variables["ENABLE_UNIX_SOCKETS"] = self.options.with_unix_sockets
 
         # These 3 checks use try_compile() against an imported CMakeDeps target (openssl::openssl), which is
         # fragile across all platforms, not just multi-config generators - see conan-io/conan#12180. The
@@ -309,10 +307,6 @@ class LibcurlConan(ConanFile):
         cmake.build()
 
     def _patch_sources(self):
-        if self.options.with_largemaxwritesize:
-            replace_in_file(self, os.path.join(self.source_folder, "include", "curl", "curl.h"),
-                                  "define CURL_MAX_WRITE_SIZE 16384",
-                                  "define CURL_MAX_WRITE_SIZE 10485760")
         # LDAP is only Conan-provided on Linux (see requirements()); FreeBSD/Apple/Windows use system
         # LDAP libraries directly via curl's own bundled FindLDAP.cmake raw discovery, which must stay
         # in MODULE mode there
