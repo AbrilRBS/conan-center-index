@@ -44,6 +44,8 @@ class LibcurlConan(ConanFile):
         "with_websockets": [True, False],
         "with_apple_sectrust": [True, False],
         "with_unix_sockets": [True, False],
+        # TODO: Think if we should hardcode
+        "with_symbol_hiding": [True, False],
     }
     default_options = {
         "shared": False,
@@ -68,6 +70,7 @@ class LibcurlConan(ConanFile):
         "with_websockets": True,
         "with_apple_sectrust": False,
         "with_unix_sockets": True,
+        "with_symbol_hiding": False,
     }
 
     @property
@@ -136,8 +139,8 @@ class LibcurlConan(ConanFile):
             # wc_Md5Final/wc_Md5Update; all three together link and run cleanly.
             if not wolfssl.options.with_curl:
                 raise ConanInvalidConfiguration("option with_ssl=wolfssl requires wolfssl/*:with_curl=True")
-            if not wolfssl.options.tls13:
-                raise ConanInvalidConfiguration("option with_ssl=wolfssl requires wolfssl/*:tls13=True")
+            if not wolfssl.options.tls13 and not wolfssl.options.with_quic:
+                raise ConanInvalidConfiguration("option with_ssl=wolfssl requires either wolfssl/*:tls13=True or wolfssl/*:with_quic=True")
             if not wolfssl.options.opensslextra:
                 raise ConanInvalidConfiguration("option with_ssl=wolfssl requires wolfssl/*:opensslextra=True")
         if self.options.get_safe("with_apple_sectrust") and self.options.with_ssl != "openssl":
@@ -184,6 +187,7 @@ class LibcurlConan(ConanFile):
         tc.cache_variables["BUILD_LIBCURL_DOCS"] = False
         tc.cache_variables["BUILD_MISC_DOCS"] = False
         tc.cache_variables["CURL_DISABLE_LDAP"] = not self.options.with_ldap
+        tc.cache_variables["CURL_HIDDEN_SYMBOLS"] = self.options.with_symbol_hiding
         # Curl has -d by default for the debug postfix, but old autotools based logic
         # did not generate any postfix, so disable it everywhere to avoid naming mismatch,
         # even if that means not following upstream naming as we would have desired
@@ -230,9 +234,8 @@ class LibcurlConan(ConanFile):
         # experimental, not-yet-production-safe conf as of Conan 2.9, and there's a live, still-open upstream
         # CMake regression in the same area (cmake/cmake#27487), so pre-seeding these avoids the try_compile
         # path entirely rather than depending on either fix landing.
-        tc.cache_variables["HAVE_SSL_SET0_WBIO"] = False
-        tc.cache_variables["HAVE_OPENSSL_SRP"] = True
-        tc.cache_variables["HAVE_SSL_CTX_SET_QUIC_METHOD"] = True
+        tc.cache_variables["HAVE_SSL_SET0_WBIO"] = True
+        tc.cache_variables["HAVE_DES_ECB_ENCRYPT"] = True
 
         # Recommended general mitigation for the same class of try_compile-with-imported-targets issue
         # (conan-io/conan#12180) for any other feature check curl's CMakeLists.txt performs that isn't
@@ -247,8 +250,6 @@ class LibcurlConan(ConanFile):
         tc.generate()
 
         deps = CMakeDeps(self)
-        deps.set_property("wolfssl", "cmake_additional_variables_prefixes", ["WolfSSL", "WOLFSSL"])
-        deps.set_property("wolfssl", "cmake_file_name", "WolfSSL")
 
         if self.options.with_brotli:
             deps.set_property("brotli", "cmake_file_name", "Brotli")
@@ -289,6 +290,8 @@ class LibcurlConan(ConanFile):
             deps.set_property("libnghttp2", "cmake_target_name", "CURL::nghttp2")
 
         if self.options.with_ssl == "wolfssl":
+            deps.set_property("wolfssl", "cmake_additional_variables_prefixes", ["WolfSSL", "WOLFSSL"])
+            deps.set_property("wolfssl", "cmake_file_name", "WolfSSL")
             deps.set_property("wolfssl", "cmake_target_name", "CURL::wolfssl")
 
         if self.options.with_ssl == "mbedtls":
