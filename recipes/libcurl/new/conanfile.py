@@ -203,11 +203,6 @@ class LibcurlConan(ConanFile):
             tc.cache_variables["ENABLE_THREADED_RESOLVER"] = self.options.with_threaded_resolver
         tc.cache_variables["CURL_DISABLE_PROXY"] = not self.options.with_proxy
         tc.cache_variables["USE_LIBIDN2"] = self.options.with_libidn
-        if self.options.with_libidn:
-            # Conan won't generate this variable as we're setting prefixes,
-            # and CMake might not either as it's looking for Libidn2
-            # Ensure it's there
-            tc.cache_variables["LIBIDN2_FOUND"] = True
         tc.cache_variables["CURL_DISABLE_VERBOSE_STRINGS"] = not self.options.with_verbose_strings
         tc.cache_variables["CURL_DISABLE_WEBSOCKETS"] = not self.options.with_websockets
 
@@ -279,6 +274,7 @@ class LibcurlConan(ConanFile):
             deps.set_property("libidn2", "cmake_file_name", "Libidn2")
             deps.set_property("libidn2", "cmake_target_name", "CURL::libidn2")
             deps.set_property("libidn2", "cmake_additional_variables_prefixes", ["LIBIDN2"])
+            deps.set_property("libidn2", "cmake_extra_variables", {"LIBIDN2_FOUND": "1"})
 
         if self.options.get_safe("with_libpsl"):
             deps.set_property("libpsl", "cmake_file_name", "Libpsl")
@@ -338,6 +334,11 @@ class LibcurlConan(ConanFile):
 
         if self.settings.os in ["Linux", "FreeBSD"]:
             self.cpp_info.components["curl"].system_libs = ["rt", "pthread"]
+            # Unlike Linux (Conan-provided openldap, see requirements()), FreeBSD has no CCI LDAP
+            # package and relies on curl's own system-native FindLDAP.cmake discovery - the resulting
+            # system library needs to be declared here for static consumers, same as Windows/Apple below
+            if self.settings.os == "FreeBSD" and self.options.with_ldap:
+                self.cpp_info.components["curl"].system_libs.append("ldap")
         elif self.settings.os == "Windows":
             # used on Windows for VS build, native and cross mingw build
             self.cpp_info.components["curl"].system_libs = ["ws2_32", "bcrypt", "iphlpapi"]
