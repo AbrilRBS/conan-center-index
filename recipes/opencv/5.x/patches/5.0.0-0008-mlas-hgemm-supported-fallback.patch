@@ -1,0 +1,26 @@
+--- a/3rdparty/mlas/lib/compute.cpp
++++ b/3rdparty/mlas/lib/compute.cpp
+@@ -23,6 +23,23 @@
+ #include "softmax.h"
+ 
+ //
++// This vendored MLAS subset only carries the SGEMM kernels (see
++// 3rdparty/mlas/CMakeLists.txt); no platform provides a real
++// MlasHGemmSupported(), yet MlasGQASupported<MLAS_FP16> (below) always
++// references it. Provide a portable fallback that reports the half-precision
++// GEMM fast path as unavailable, matching this subset's existing pattern of
++// portable fallbacks for kernels that were not vendored.
++bool
++MLASCALL
++MlasHGemmSupported(
++    CBLAS_TRANSPOSE /* TransA */,
++    CBLAS_TRANSPOSE /* TransB */
++    )
++{
++    return false;
++}
++
++//
+ // Bundles the constants for use by kernels written in assembly.
+ //
+ 
