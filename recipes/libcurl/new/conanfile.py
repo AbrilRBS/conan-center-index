@@ -186,7 +186,6 @@ class LibcurlConan(ConanFile):
         tc.cache_variables["BUILD_LIBCURL_DOCS"] = False
         tc.cache_variables["BUILD_MISC_DOCS"] = False
         tc.cache_variables["CURL_DISABLE_LDAP"] = not self.options.with_ldap
-        tc.cache_variables["BUILD_SHARED_LIBS"] = self.options.shared
         # Curl has -d by default for the debug postfix, but old autotools based logic
         # did not generate any postfix, so disable it everywhere to avoid naming mismatch,
         # even if that means not following upstream naming as we would have desired
@@ -314,10 +313,10 @@ class LibcurlConan(ConanFile):
             replace_in_file(self, os.path.join(self.source_folder, "include", "curl", "curl.h"),
                                   "define CURL_MAX_WRITE_SIZE 16384",
                                   "define CURL_MAX_WRITE_SIZE 10485760")
-        # LDAP is only Conan-provided on Linux (see requirements()); Apple/Windows use system LDAP
-        # libraries directly via curl's own bundled FindLDAP.cmake raw discovery, which must stay in
-        # MODULE mode there
-        if self.options.with_ldap and self.settings.os in ("Linux", "FreeBSD"):
+        # LDAP is only Conan-provided on Linux (see requirements()); FreeBSD/Apple/Windows use system
+        # LDAP libraries directly via curl's own bundled FindLDAP.cmake raw discovery, which must stay
+        # in MODULE mode there
+        if self.options.with_ldap and self.settings.os == "Linux":
             replace_in_file(self, os.path.join(self.source_folder, "CMakeLists.txt"),
                             "find_package(LDAP MODULE)",
                             "find_package(LDAP CONFIG REQUIRED)")
