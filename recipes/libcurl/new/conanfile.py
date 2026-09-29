@@ -155,11 +155,11 @@ class LibcurlConan(ConanFile):
         cert_url = self.conf.get("user.libcurl.cert:url", check_type=str) or "https://curl.se/ca/cacert-2025-11-04.pem"
         cert_sha256 = self.conf.get("user.libcurl.cert:sha256", check_type=str) or "8ac40bdd3d3e151a6b4078d2b2029796e8f843e3f86fbf2adbc4dd9f05e79def"
         download(self, cert_url, "cacert.pem", verify=True, sha256=cert_sha256)
-        replace_in_file(self, "CMakeLists.txt", "find_package(NGHTTP2 MODULE)", "find_package(NGHTTP2 CONFIG REQUIRED)")
-        replace_in_file(self, "CMakeLists.txt", "find_package(Cares MODULE REQUIRED)", "find_package(Cares CONFIG REQUIRED)")
-        replace_in_file(self, "CMakeLists.txt", "find_package(Libidn2 MODULE)", "find_package(Libidn2 CONFIG REQUIRED)")
-        replace_in_file(self, "CMakeLists.txt", "find_package(Libpsl MODULE REQUIRED)", "find_package(Libpsl CONFIG REQUIRED)")
-        replace_in_file(self, "CMakeLists.txt", "find_package(Libssh2 MODULE)", "find_package(Libssh2 CONFIG REQUIRED)")
+        replace_in_file(self, os.path.join(self.source_folder, "CMakeLists.txt"), "find_package(NGHTTP2 MODULE)", "find_package(NGHTTP2 CONFIG REQUIRED)")
+        replace_in_file(self, os.path.join(self.source_folder, "CMakeLists.txt"), "find_package(Cares MODULE REQUIRED)", "find_package(Cares CONFIG REQUIRED)")
+        replace_in_file(self, os.path.join(self.source_folder, "CMakeLists.txt"), "find_package(Libidn2 MODULE)", "find_package(Libidn2 CONFIG REQUIRED)")
+        replace_in_file(self, os.path.join(self.source_folder, "CMakeLists.txt"), "find_package(Libpsl MODULE REQUIRED)", "find_package(Libpsl CONFIG REQUIRED)")
+        replace_in_file(self, os.path.join(self.source_folder, "CMakeLists.txt"), "find_package(Libssh2 MODULE)", "find_package(Libssh2 CONFIG REQUIRED)")
         # NOT patching MbedTLS to CONFIG REQUIRED (unlike the others above): curl's own bundled
         # CMake/FindMbedTLS.cmake already tries a CONFIG-mode lookup internally (picking up Conan's
         # generated package via the cmake_target_name remap below) before falling back to raw discovery,
@@ -168,18 +168,11 @@ class LibcurlConan(ConanFile):
         # MbedTLS_VERSION (mixed case), so forcing CONFIG REQUIRED here bypasses curl's own module and
         # breaks that version check outright - confirmed empirically (mbedtls builds cleanly without
         # this patch, fails "mbedTLS v3.2.0 or newer is required" with it).
-        replace_in_file(self, "CMakeLists.txt", "find_package(WolfSSL MODULE REQUIRED)", "find_package(WolfSSL CONFIG REQUIRED)")
-        # LDAP is only Conan-provided on Linux (see requirements()); Apple/Windows use system LDAP
-        # libraries directly via curl's own bundled FindLDAP.cmake raw discovery, which must stay in
-        # MODULE mode there. source() can't see settings (sources are shared across configurations),
-        # so the choice is deferred to a CMake-level conditional driven by a cache variable set in
-        # generate(), instead of branching here.
-        replace_in_file(self, "CMakeLists.txt", "find_package(LDAP MODULE)",
-                         "if(CURL_RECIPE_LDAP_CONFIG_MODE)\n    find_package(LDAP CONFIG REQUIRED)\n  else()\n    find_package(LDAP MODULE)\n  endif()")
-        replace_in_file(self, os.path.join("CMake", "Macros.cmake"), "find_package(${_find_name})", "find_package(${_find_name} CONFIG REQUIRED)")
-        replace_in_file(self, os.path.join("CMake", "Macros.cmake"), "find_package(${_find_name} MODULE)", "find_package(${_find_name} CONFIG REQUIRED)")
-        replace_in_file(self, os.path.join("CMake", "Macros.cmake"), "find_package(${_find_name} REQUIRED)", "find_package(${_find_name} CONFIG REQUIRED)")
-        replace_in_file(self, os.path.join("CMake", "Macros.cmake"), "find_package(${_find_name} MODULE REQUIRED)", "find_package(${_find_name} CONFIG REQUIRED)")
+        replace_in_file(self, os.path.join(self.source_folder, "CMakeLists.txt"), "find_package(WolfSSL MODULE REQUIRED)", "find_package(WolfSSL CONFIG REQUIRED)")
+        replace_in_file(self, os.path.join(self.source_folder, "CMake", "Macros.cmake"), "find_package(${_find_name})", "find_package(${_find_name} CONFIG REQUIRED)")
+        replace_in_file(self, os.path.join(self.source_folder, "CMake", "Macros.cmake"), "find_package(${_find_name} MODULE)", "find_package(${_find_name} CONFIG REQUIRED)")
+        replace_in_file(self, os.path.join(self.source_folder, "CMake", "Macros.cmake"), "find_package(${_find_name} REQUIRED)", "find_package(${_find_name} CONFIG REQUIRED)")
+        replace_in_file(self, os.path.join(self.source_folder, "CMake", "Macros.cmake"), "find_package(${_find_name} MODULE REQUIRED)", "find_package(${_find_name} CONFIG REQUIRED)")
 
     def generate(self):
         if self._is_win_x_android:
@@ -193,7 +186,6 @@ class LibcurlConan(ConanFile):
         tc.cache_variables["BUILD_LIBCURL_DOCS"] = False
         tc.cache_variables["BUILD_MISC_DOCS"] = False
         tc.cache_variables["CURL_DISABLE_LDAP"] = not self.options.with_ldap
-        tc.cache_variables["CURL_RECIPE_LDAP_CONFIG_MODE"] = self.settings.os == "Linux" and bool(self.options.with_ldap)
         tc.cache_variables["BUILD_SHARED_LIBS"] = self.options.shared
         # Curl has -d by default for the debug postfix, but old autotools based logic
         # did not generate any postfix, so disable it everywhere to avoid naming mismatch,
@@ -305,8 +297,6 @@ class LibcurlConan(ConanFile):
 
         if self.options.with_ssl == "wolfssl":
             deps.set_property("wolfssl", "cmake_target_name", "CURL::wolfssl")
-        # Now the rest of the dependencies that don't use the imported target directly
-        # (openssl, zlib)
 
         if self.options.with_ssl == "mbedtls":
             deps.set_property("mbedtls", "cmake_target_name", "CURL::mbedtls")
@@ -324,6 +314,13 @@ class LibcurlConan(ConanFile):
             replace_in_file(self, os.path.join(self.source_folder, "include", "curl", "curl.h"),
                                   "define CURL_MAX_WRITE_SIZE 16384",
                                   "define CURL_MAX_WRITE_SIZE 10485760")
+        # LDAP is only Conan-provided on Linux (see requirements()); Apple/Windows use system LDAP
+        # libraries directly via curl's own bundled FindLDAP.cmake raw discovery, which must stay in
+        # MODULE mode there
+        if self.options.with_ldap and self.settings.os in ("Linux", "FreeBSD"):
+            replace_in_file(self, os.path.join(self.source_folder, "CMakeLists.txt"),
+                            "find_package(LDAP MODULE)",
+                            "find_package(LDAP CONFIG REQUIRED)")
 
     def package(self):
         copy(self, "COPYING", src=self.source_folder, dst=os.path.join(self.package_folder, "licenses"))
